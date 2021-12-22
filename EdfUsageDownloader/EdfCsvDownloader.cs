@@ -18,14 +18,35 @@ public class EdfCsvDownloader : IEdfDataProducer
     
     public List<EdfDailyUsageRecord> GetDailyUsage(DateTime? fromDate)
     {
-        //TODO: Handle fromdate previous months
-        Stream? csvStream = this.GetCsvData(fromDate.Value, true, true).Result;
-        return csvStream.ToEdfDailyUsageRecords();
+        return this.GetDailyUsageAsync(fromDate).Result;
     }
 
     public List<EdfTimeUsageRecord> GetTimeUsage(DateTime? fromDate)
     {
         return this.GetTimeUsageAsync(fromDate).Result;
+    }
+
+    private async Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate)
+    {
+        List<EdfDailyUsageRecord> usageRecords = new List<EdfDailyUsageRecord>();
+
+        fromDate = fromDate.HasValue
+            ? new DateTime(fromDate.Value.Year, fromDate.Value.Month, 1)
+            : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        
+        DateTime currentDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+
+        while (currentDate.Year >= fromDate.Value.Year && currentDate.Month >= fromDate.Value.Month)
+        {
+            bool defaultMode = currentDate.Year == fromDate.Value.Year && currentDate.Month == fromDate.Value.Month;
+            Stream? csv = await this.GetCsvData(currentDate, true, defaultMode);
+            List<EdfDailyUsageRecord> edfUsageRecords = csv.ToEdfDailyUsageRecords();
+
+            usageRecords.AddRange(edfUsageRecords);
+            currentDate = currentDate.AddMonths(-1);
+        }
+
+        return usageRecords;
     }
 
     private async Task<List<EdfTimeUsageRecord>> GetTimeUsageAsync(DateTime? fromDate)
@@ -35,7 +56,7 @@ public class EdfCsvDownloader : IEdfDataProducer
         DateTime currentDate = DateTime.Now;
         bool isFirstPass = true;
 
-        while (currentDate.Date >= fromDate.Value.Date)
+        while (currentDate.Date >= (fromDate?.Date ?? DateTime.Now.Date))
         {
             Stream? csv = await this.GetCsvData(currentDate, false, isFirstPass);
             List<EdfTimeUsageRecord> edfUsageRecords = csv.ToEdfTimeUsageRecords();
