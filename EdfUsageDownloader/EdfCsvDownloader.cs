@@ -38,6 +38,7 @@ public class EdfCsvDownloader : IEdfDataProducer
 
         while (currentDate.Year >= fromDate.Value.Year && currentDate.Month >= fromDate.Value.Month)
         {
+            Console.WriteLine($"Retrieving Daily Usage information for {currentDate.ToString("MMMM yyyy")}");
             bool defaultMode = currentDate.Year == fromDate.Value.Year && currentDate.Month == fromDate.Value.Month;
 
             try
@@ -67,6 +68,8 @@ public class EdfCsvDownloader : IEdfDataProducer
 
         while (currentDate.Date >= (fromDate?.Date ?? DateTime.Now.Date))
         {
+            Console.WriteLine($"Retrieving Time Usage information for {currentDate.ToString("dd/MM/yyyy")}");
+            
             try
             {
                 Stream? csv = await this.GetCsvData(currentDate, false, isFirstPass);
@@ -93,6 +96,8 @@ public class EdfCsvDownloader : IEdfDataProducer
 
     public async Task Authenticate()
     {
+        Console.WriteLine("EdfCsvDownloader: Beginning Authentication...");
+        
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
@@ -142,6 +147,8 @@ public class EdfCsvDownloader : IEdfDataProducer
                 SameSite = cookie.SameSite
             });
         }
+        
+        Console.WriteLine("EdfCsvDownloader: Authentication completed.");
     }
 
     private async Task<Stream?> GetCsvData(DateTime? forDate, bool isDailyUsage, bool defaultMode)

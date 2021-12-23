@@ -13,6 +13,7 @@ namespace EdfUsageDownloader
     {
         static async Task Main(string[] args)
         {
+            Console.WriteLine("Initialising and reading config...");
             using IHost host = Host.CreateDefaultBuilder(args).Build();
             IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
 
@@ -25,12 +26,15 @@ namespace EdfUsageDownloader
 
             if (string.IsNullOrWhiteSpace(dailyUsageCsvFile) || string.IsNullOrWhiteSpace(timeUsageCsvFile))
             {
+                Console.WriteLine("Either dailyUsageCsvFile or timeUsageCsvFile not set, using CSV Downloader.");
+                
                 EdfCsvDownloader csvDownloader = new EdfCsvDownloader(email, password);
                 await csvDownloader.Authenticate();
                 edfDataProducer = csvDownloader;
             }
             else
             {
+                Console.WriteLine($"Initialising CSV File Reader with dailyUsageCsvFile = {dailyUsageCsvFile} and timeUsageCsvFile = {timeUsageCsvFile}");
                 edfDataProducer = new EdfCsvFileReader(dailyUsageCsvFile, timeUsageCsvFile);
             }
 
@@ -63,10 +67,14 @@ namespace EdfUsageDownloader
             DateTime fromDate = oldestIncompleteInfo is null
                 ? DateTime.Today.AddDays(-1)
                 : oldestIncompleteInfo.Date.ToDateTime(TimeOnly.MinValue);
+            
+            Console.WriteLine($"ProcessDailyUsage: OldestIncompleteInfo is {fromDate.ToString("dd/MM/yyyy")}");
 
             List<EdfDailyUsageRecord> edfUsageRecords = edfDataProducer.GetDailyUsage(fromDate);
             List<DailyUsageRecord> usageRecords =
                 mapper.Map<List<EdfDailyUsageRecord>, List<DailyUsageRecord>>(edfUsageRecords);
+            
+            Console.WriteLine($"Processing {usageRecords.Count} Daily Usage Records...");
 
             foreach (DailyUsageRecord usageRecord in usageRecords.OrderBy(x => x.Date))
             {
@@ -90,15 +98,21 @@ namespace EdfUsageDownloader
             }
 
             await dbContext.SaveChangesAsync();
+            
+            Console.WriteLine("Daily Usage processing completed");
         }
 
         private static async Task ProcessTimeUsage(UsageDbContext dbContext, IEdfDataProducer edfDataProducer,
             IMapper mapper)
         {
             TimeUsageRecord oldestData = await dbContext.TimeUsage.OrderByDescending(x => x.ReadTime).FirstAsync();
+            
+            Console.WriteLine($"ProcessTimeUsage: OldestData is {oldestData.ReadTime.ToString("dd/MM/yyyy")}");
 
             List<EdfTimeUsageRecord> edfUsageRecords = edfDataProducer.GetTimeUsage(oldestData.ReadTime);
             List<TimeUsageRecord> usageRecords = mapper.Map<List<EdfTimeUsageRecord>, List<TimeUsageRecord>>(edfUsageRecords);
+            
+            Console.WriteLine($"Processing {usageRecords.Count} Time Usage Records...");
 
             foreach (TimeUsageRecord usageRecord in usageRecords)
             {
@@ -115,6 +129,8 @@ namespace EdfUsageDownloader
             }
 
             await dbContext.SaveChangesAsync();
+            
+            Console.WriteLine("Time Usage processing completed");
         }
     }
 }
