@@ -39,11 +39,20 @@ public class EdfCsvDownloader : IEdfDataProducer
         while (currentDate.Year >= fromDate.Value.Year && currentDate.Month >= fromDate.Value.Month)
         {
             bool defaultMode = currentDate.Year == fromDate.Value.Year && currentDate.Month == fromDate.Value.Month;
-            Stream? csv = await this.GetCsvData(currentDate, true, defaultMode);
-            List<EdfDailyUsageRecord> edfUsageRecords = csv.ToEdfDailyUsageRecords();
 
-            usageRecords.AddRange(edfUsageRecords);
-            currentDate = currentDate.AddMonths(-1);
+            try
+            {
+                Stream? csv = await this.GetCsvData(currentDate, true, defaultMode);
+                List<EdfDailyUsageRecord> edfUsageRecords = csv.ToEdfDailyUsageRecords();
+
+                usageRecords.AddRange(edfUsageRecords);
+                currentDate = currentDate.AddMonths(-1);
+            }
+            catch (Exception)
+            {
+                // If we hit an exception it's probably because we have no data, so just go to the next month
+                currentDate = currentDate.AddMonths(-1);    
+            }
         }
 
         return usageRecords;
@@ -58,16 +67,25 @@ public class EdfCsvDownloader : IEdfDataProducer
 
         while (currentDate.Date >= (fromDate?.Date ?? DateTime.Now.Date))
         {
-            Stream? csv = await this.GetCsvData(currentDate, false, isFirstPass);
-            List<EdfTimeUsageRecord> edfUsageRecords = csv.ToEdfTimeUsageRecords();
+            try
+            {
+                Stream? csv = await this.GetCsvData(currentDate, false, isFirstPass);
+                List<EdfTimeUsageRecord> edfUsageRecords = csv.ToEdfTimeUsageRecords();
 
-            usageRecords.AddRange(edfUsageRecords);
+                usageRecords.AddRange(edfUsageRecords);
 
-            // if the data for today isn't available, the query to edf will default to the last available day
-            // so we reset the currentDate to the date returned from EDF so we don't get multiple resultsets for
-            // the same day (i.e. the last day that EDF had available)
-            currentDate = edfUsageRecords.First().ReadTime.AddDays(-1);
-            isFirstPass = false;
+                // if the data for today isn't available, the query to edf will default to the last available day
+                // so we reset the currentDate to the date returned from EDF so we don't get multiple resultsets for
+                // the same day (i.e. the last day that EDF had available)
+                currentDate = edfUsageRecords.First().ReadTime.AddDays(-1);
+                isFirstPass = false;
+            }
+            catch (Exception)
+            {
+                // If we hit an exception it's probably because we have no data, so just go to the next day
+                currentDate = currentDate.AddDays(-1);
+                isFirstPass = false;
+            }
         }
 
         return usageRecords;
