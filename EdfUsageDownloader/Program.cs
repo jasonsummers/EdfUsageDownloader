@@ -18,17 +18,22 @@ namespace EdfUsageDownloader
 
             string email = config.GetValue<string>("edf_account_email");
             string password = config.GetValue<string>("edf_account_password");
-            string connectionString = config.GetValue<string>("connectionString");
-            
-            Console.WriteLine("Hello, World!");
+            string dailyUsageCsvFile = config.GetValue<string>("dailyUsageCsvFile");
+            string timeUsageCsvFile = config.GetValue<string>("timeUsageCsvFile");
 
-            EdfCsvDownloader csvDownloader = new EdfCsvDownloader(email, password);
-            await csvDownloader.Authenticate();
+            IEdfDataProducer edfDataProducer;
 
-            /*IEdfDataProducer edfDataProducer = new EdfCsvFileReader(
-                "/Users/Jason/Dev/EdfUsageDownloader/EdfUsageDownloader/EDFEnergy.csv",
-                "/Users/Jason/Dev/EdfUsageDownloader/EdfUsageDownloader/EDFEnergy-2.csv");
-            */
+            if (string.IsNullOrWhiteSpace(dailyUsageCsvFile) || string.IsNullOrWhiteSpace(timeUsageCsvFile))
+            {
+                EdfCsvDownloader csvDownloader = new EdfCsvDownloader(email, password);
+                await csvDownloader.Authenticate();
+                edfDataProducer = csvDownloader;
+            }
+            else
+            {
+                edfDataProducer = new EdfCsvFileReader(dailyUsageCsvFile, timeUsageCsvFile);
+            }
+
             var configuration = new MapperConfiguration(cfg => 
             {
                 cfg.CreateMap<EdfDailyUsageRecord, DailyUsageRecord>();
@@ -36,10 +41,10 @@ namespace EdfUsageDownloader
             });
             
             var mapper = configuration.CreateMapper();
-            UsageDbContext dbContext = new UsageDbContext(connectionString);
+            UsageDbContext dbContext = new UsageDbContext();
 
-            await ProcessDailyUsage(dbContext, csvDownloader, mapper);
-            await ProcessTimeUsage(dbContext, csvDownloader, mapper);
+            await ProcessDailyUsage(dbContext, edfDataProducer, mapper);
+            await ProcessTimeUsage(dbContext, edfDataProducer, mapper);
         }
 
         private static async Task ProcessDailyUsage(UsageDbContext dbContext, IEdfDataProducer edfDataProducer,
