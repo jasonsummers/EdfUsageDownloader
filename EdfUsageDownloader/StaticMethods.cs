@@ -18,7 +18,7 @@ public static class StaticMethods
             {
                 var record = new EdfDailyUsageRecord
                 {
-                    Date = DateOnly.FromDateTime(csv.GetField<DateTime>("Read Date")),
+                    ReadDate = csv.GetField<DateTime>("Read Date"),
                     ElectricityUnits = csv.GetField<double>("Electricity Consumption"),
                     ElectricityCost = csv.GetField<double>("Electricity Cost"),
                     ElectricityEstimated = csv.GetField("Electricity Estimated") == "Yes",

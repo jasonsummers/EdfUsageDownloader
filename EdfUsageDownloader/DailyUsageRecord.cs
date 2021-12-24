@@ -6,7 +6,7 @@ public class DailyUsageRecord
     
     public DateTime EntryTime { get; set; }
     
-    public DateOnly Date { get; set; }
+    public DateTime ReadDate { get; set; }
     
     public double ElectricityUnits { get; set; }
     

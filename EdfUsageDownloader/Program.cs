@@ -61,12 +61,12 @@ namespace EdfUsageDownloader
                 x.ElectricityCost == 0 ||
                 x.ElectricityUnits == 0 ||
                 x.GasCost == 0 ||
-                x.GasUnits == 0).OrderBy(x => x.Date).FirstOrDefaultAsync();
+                x.GasUnits == 0).OrderBy(x => x.ReadDate).FirstOrDefaultAsync();
 
             // then go and get the data
             DateTime fromDate = oldestIncompleteInfo is null
                 ? DateTime.Today.AddDays(-1)
-                : oldestIncompleteInfo.Date.ToDateTime(TimeOnly.MinValue);
+                : oldestIncompleteInfo.ReadDate;
             
             Console.WriteLine($"ProcessDailyUsage: OldestIncompleteInfo is {fromDate.ToString("dd/MM/yyyy")}");
 
@@ -76,10 +76,10 @@ namespace EdfUsageDownloader
             
             Console.WriteLine($"Processing {usageRecords.Count} Daily Usage Records...");
 
-            foreach (DailyUsageRecord usageRecord in usageRecords.OrderBy(x => x.Date))
+            foreach (DailyUsageRecord usageRecord in usageRecords.OrderBy(x => x.ReadDate))
             {
                 DailyUsageRecord? existingRecord =
-                    await dbContext.DailyUsage.FirstOrDefaultAsync(x => x.Date == usageRecord.Date);
+                    await dbContext.DailyUsage.FirstOrDefaultAsync(x => x.ReadDate == usageRecord.ReadDate);
 
                 if (existingRecord is null)
                 {

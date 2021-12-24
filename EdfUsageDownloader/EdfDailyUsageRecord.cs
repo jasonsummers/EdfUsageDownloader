@@ -2,7 +2,7 @@ namespace EdfUsageDownloader;
 
 public struct EdfDailyUsageRecord
 {
-    public DateOnly Date { get; set; }
+    public DateTime ReadDate { get; set; }
     
     public double ElectricityUnits { get; set; }
     
