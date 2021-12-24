@@ -114,7 +114,7 @@ namespace EdfUsageDownloader
             
             Console.WriteLine($"Processing {usageRecords.Count} Time Usage Records...");
 
-            foreach (TimeUsageRecord usageRecord in usageRecords)
+            foreach (TimeUsageRecord usageRecord in usageRecords.OrderBy(x => x.ReadTime))
             {
                 TimeUsageRecord existingRecord =
                     await dbContext.TimeUsage.FirstOrDefaultAsync(x => x.ReadTime == usageRecord.ReadTime);
