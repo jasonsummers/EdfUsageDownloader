@@ -18,7 +18,7 @@ COPY --from=publish /app/publish .
 COPY --from=build /app/build/playwright.ps1 .
 
 # Install Playwright dependencies
-RUN apt-get update && apt-get install -y wget \ 
+RUN apt-get update && apt-get install -y wget \
 	  libglib2.0-0 \
           libnss3 \
           libnspr4 \

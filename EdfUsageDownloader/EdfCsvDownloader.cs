@@ -118,12 +118,14 @@ public class EdfCsvDownloader : IEdfDataProducer
         await page.GotoAsync("https://my.edfenergy.com/user/login", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded});
 
         await page.WaitForSelectorAsync("[placeholder=\"e.g. an.other@email.com\"]");
+        
+        await page.ClickAsync("[aria-label=\"Let us know if we can use cookies\"] [aria-label=\"Close\"]");
 
         // Fill [placeholder="e.g. an.other@email.com"]
         await page.FillAsync("[placeholder=\"e.g. an.other@email.com\"]", this._email);
 
         // Click text=Next
-        await page.ClickAsync("text=Next");
+        await page.ClickAsync("input:has-text('Log In')");
         // Assert.AreEqual("https://my.edfenergy.com/login/pwdorotp", page.Url);
 
         // Fill [placeholder="Password"]
