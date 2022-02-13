@@ -36,7 +36,7 @@ public class EdfCsvDownloader : IEdfDataProducer
         
         DateTime currentDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
 
-        while (currentDate.Year >= fromDate.Value.Year && currentDate.Month >= fromDate.Value.Month)
+        while (currentDate.Date >= (fromDate?.Date ?? DateTime.Now.Date))
         {
             Console.WriteLine($"Retrieving Daily Usage information for {currentDate.ToString("MMMM yyyy")}");
             bool defaultMode = currentDate.Year == fromDate.Value.Year && currentDate.Month == fromDate.Value.Month;
