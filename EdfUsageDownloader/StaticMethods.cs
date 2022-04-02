@@ -26,8 +26,9 @@ public static class StaticMethods
                     GasCost = csv.GetField<double>("Gas Cost"),
                     GasEstimated = csv.GetField("Gas Estimated") == "Yes"
                 };
-                    
-                usageRecords.Add(record);
+                
+                if (!usageRecords.Exists(x => x.ReadDate == record.ReadDate))
+                    usageRecords.Add(record);
             }
         }
 

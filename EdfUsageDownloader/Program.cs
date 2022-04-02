@@ -116,7 +116,7 @@ namespace EdfUsageDownloader
 
             foreach (TimeUsageRecord usageRecord in usageRecords.OrderBy(x => x.ReadTime))
             {
-                TimeUsageRecord existingRecord =
+                TimeUsageRecord? existingRecord =
                     await dbContext.TimeUsage.FirstOrDefaultAsync(x => x.ReadTime == usageRecord.ReadTime);
 
                 if (existingRecord is not null)
