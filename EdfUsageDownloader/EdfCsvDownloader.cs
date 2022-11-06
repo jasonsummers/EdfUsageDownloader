@@ -1,19 +1,30 @@
+using System.Data;
 using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Playwright;
 
 namespace EdfUsageDownloader;
 
-public class EdfCsvDownloader : IEdfDataProducer
+public class EdfCsvDownloader : IEdfDataProducer, IDisposable
 {
-    private string _email;
-    private string _password;
+    private readonly Uri _baseAddress = new Uri("https://my.edfenergy.com");
+    
+    private readonly string _email;
+    private readonly string _password;
     private string _cookieString;
     private List<Cookie> _cookies;
+
+    private IPlaywright _playwright;
+    private IBrowser _browser;
+    private IBrowserContext _browserContext;
+    private IPage _page;
+    
     public EdfCsvDownloader(string email, string password)
     {
         this._email = email;
         this._password = password;
+        this._cookieString = string.Empty;
+        this._cookies = new List<Cookie>();
     }
 
     public async Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate)
@@ -33,14 +44,18 @@ public class EdfCsvDownloader : IEdfDataProducer
 
             try
             {
-                var csv = await this.GetCsvData(currentDate, true, defaultMode);
+                var csv = await this.GetCsvData(currentDate, true, defaultMode, EdfDownloadMode.PlayWright);
                 var edfUsageRecords = await csv.ToEdfDailyUsageRecordsAsync();
 
                 usageRecords.AddRange(edfUsageRecords);
                 currentDate = currentDate.AddMonths(-1);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.WriteLine($"Exception: {e.Message}");
+                if (e.InnerException != null)
+                    Console.WriteLine($"InnerException: {e.InnerException.Message}");
+
                 // If we hit an exception it's probably because we have no data, so just go to the next month
                 currentDate = currentDate.AddMonths(-1);    
             }
@@ -62,7 +77,7 @@ public class EdfCsvDownloader : IEdfDataProducer
             
             try
             {
-                var csv = await this.GetCsvData(currentDate, false, isFirstPass);
+                var csv = await this.GetCsvData(currentDate, false, isFirstPass, EdfDownloadMode.PlayWright);
                 var edfUsageRecords = await csv.ToEdfTimeUsageRecordsAsync();
 
                 usageRecords.AddRange(edfUsageRecords);
@@ -73,8 +88,12 @@ public class EdfCsvDownloader : IEdfDataProducer
                 currentDate = edfUsageRecords.First().ReadTime.AddDays(-1);
                 isFirstPass = false;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.WriteLine($"Exception: {e.Message}");
+                if (e.InnerException != null)
+                    Console.WriteLine($"InnerException: {e.InnerException.Message}");
+                
                 // If we hit an exception it's probably because we have no data, so just go to the next day
                 currentDate = currentDate.AddDays(-1);
                 isFirstPass = false;
@@ -88,46 +107,44 @@ public class EdfCsvDownloader : IEdfDataProducer
     {
         Console.WriteLine("EdfCsvDownloader: Beginning Authentication...");
         
-        using var playwright = await Playwright.CreateAsync();
-        await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        _playwright = await Playwright.CreateAsync();
+        _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
-            Headless = true,
-            SlowMo = 5000
+            Headless = false,
+            SlowMo = 3000
         });
-        var context = await browser.NewContextAsync(new BrowserNewContextOptions
+        _browserContext = await _browser.NewContextAsync(new BrowserNewContextOptions
         {
             AcceptDownloads = true,
         });
 
         // Open new page
-        //return await context.NewPageAsync();
-        // Open new page
-        //var page = await GetNewPlaywrightPage();
-        var page = await context.NewPageAsync();
+        this._page = await _browserContext.NewPageAsync();
         // Go to https://my.edfenergy.com/
-        await page.GotoAsync("https://my.edfenergy.com/user/login", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded});
+        await this._page.GotoAsync("https://my.edfenergy.com/user/login",
+            new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
-        await page.WaitForSelectorAsync("[placeholder=\"e.g. an.other@email.com\"]");
+        await this._page.WaitForSelectorAsync("[placeholder=\"e.g. an.other@email.com\"]");
         
-        await page.ClickAsync("[aria-label=\"Let us know if we can use cookies\"] [aria-label=\"Close\"]");
+        await this._page.ClickAsync("[aria-label=\"Let us know if we can use cookies\"] [aria-label=\"Close\"]");
 
         // Fill [placeholder="e.g. an.other@email.com"]
-        await page.FillAsync("[placeholder=\"e.g. an.other@email.com\"]", this._email);
+        await this._page.FillAsync("[placeholder=\"e.g. an.other@email.com\"]", this._email);
 
         // Click text=Next
-        await page.ClickAsync("input:has-text('Log In')");
-        // Assert.AreEqual("https://my.edfenergy.com/login/pwdorotp", page.Url);
+        await this._page.ClickAsync("input:has-text('Log In')");
+        // Assert.AreEqual("https://my.edfenergy.com/login/pwdorotp", this._page.Url);
 
         // Fill [placeholder="Password"]
-        await page.FillAsync("[placeholder=\"Password\"]", this._password);
+        await this._page.FillAsync("[placeholder=\"Password\"]", this._password);
 
         // Click text=Log in with password
-        await page.ClickAsync("text=Log in with password");
+        await this._page.ClickAsync("text=Log in with password");
+
+        await this._page.GotoAsync("https://my.edfenergy.com/myaccount/energyhub/home",
+            new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
         
-        this._cookieString = string.Empty;
-        this._cookies = new List<Cookie>();
-        
-        foreach (BrowserContextCookiesResult cookie in await page.Context.CookiesAsync())
+        foreach (var cookie in await this._page.Context.CookiesAsync())
         {
             this._cookieString += $"{cookie.Name}={cookie.Value};";
             this._cookies.Add(new Cookie
@@ -143,38 +160,89 @@ public class EdfCsvDownloader : IEdfDataProducer
         Console.WriteLine("EdfCsvDownloader: Authentication completed.");
     }
 
-    private async Task<Stream?> GetCsvData(DateTime? forDate, bool isDailyUsage, bool defaultMode)
+    private async Task<string> SetGraphData(DateTime? forDate, bool isDailyUsage, bool defaultMode)
     {
         var dataType = isDailyUsage ? "day" : "hour";
         var fromDate = !forDate.HasValue ? string.Empty : forDate.Value.ToString("dd+MMMM+yyyy");
         var eventType = defaultMode ? "default" : "dateEvent";
-        var data = $"tabVal={dataType}&fuelType=electricity&consumptionType=true&fromDate={fromDate}&eventType={eventType}";
+        var data =
+            $"tabVal={dataType}&fuelType=electricity&consumptionType=true&fromDate={fromDate}&eventType={eventType}";
 
-        var baseAddress = new Uri("https://my.edfenergy.com");
-
-        using (var handler = new HttpClientHandler { UseCookies = false })
-        using (var client = new HttpClient(handler) { BaseAddress = baseAddress })
-        {
-            var message = new HttpRequestMessage(HttpMethod.Post, "/smartplus/graph/generate");
-            message.Headers.Add("Cookie", this._cookieString);
-            message.Content = new StringContent(data, Encoding.UTF8);
-            message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-            var result = await client.SendAsync(message);
-            result.EnsureSuccessStatusCode();
-        }
-
-        Stream? resultStream;
+        using var handler = new HttpClientHandler { UseCookies = false };
+        using var client = new HttpClient(handler) { BaseAddress = _baseAddress };
         
-        using (var handler = new HttpClientHandler { UseCookies = false })
-        using (var client = new HttpClient(handler) { BaseAddress = baseAddress })
+        var message = new HttpRequestMessage(HttpMethod.Post, "/smartplus/graph/generate");
+        message.Headers.Add("Cookie", this._cookieString);
+        message.Content = new StringContent(data, Encoding.UTF8);
+        message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+        var result = await client.SendAsync(message);
+        result.EnsureSuccessStatusCode();
+        
+        return await result.Content.ReadAsStringAsync();
+    }
+
+    private async Task<Stream?> GetCsvData(DateTime? forDate, bool isDailyUsage, bool defaultMode,
+        EdfDownloadMode downloadMode)
+    {
+        if (downloadMode == EdfDownloadMode.Direct)
         {
+            await this.SetGraphData(forDate, isDailyUsage, defaultMode);
+            using var handler = new HttpClientHandler { UseCookies = false };
+            using var client = new HttpClient(handler) { BaseAddress = _baseAddress };
             var message = new HttpRequestMessage(HttpMethod.Get, "/smartplus-csv");
             message.Headers.Add("Cookie", this._cookieString);
             var result = await client.SendAsync(message);
             result.EnsureSuccessStatusCode();
-            resultStream = await result.Content.ReadAsStreamAsync();
+            return await result.Content.ReadAsStreamAsync();
         }
 
-        return resultStream;
+        switch (isDailyUsage)
+        {
+            case true:
+                await this._page.ClickAsync("#smartplus-day");
+                break;
+            case false:
+                await this._page.ClickAsync("#smartplus-hour");
+                break;
+        }
+
+        var dailyDateFormat = "dd MMMM yyyy";
+        var monthlyDateFormat = "MMMM yyyy";
+
+        var requiredDatepickerValue = isDailyUsage 
+            ? forDate.HasValue ? forDate.Value.ToString(monthlyDateFormat) : DateTime.Now.ToString(monthlyDateFormat)
+            : forDate.HasValue ? forDate.Value.ToString(dailyDateFormat) : DateTime.Now.ToString(dailyDateFormat);
+        
+        var datePicker = this._page.Locator("#smart_plus_date_picker").First;
+        var datePickerValue = await datePicker.InputValueAsync();
+
+        // if we're getting hourly usage, and the required date month is the same as the datepicker month
+        // and the required date day is not equal to the datepicker day
+        // and the required date day is greater than the datepicker day
+        // then we're asking for data which doesn't exist yet
+        if (!isDailyUsage && datePickerValue.Substring(3, 3) == requiredDatepickerValue.Substring(3, 3) &&
+            datePickerValue.Substring(0, 2) != requiredDatepickerValue.Substring(0, 2) &&
+            Convert.ToInt32(datePickerValue.Substring(0, 2)) < Convert.ToInt32(requiredDatepickerValue.Substring(0, 2)))
+            throw new DataException($"Information for {requiredDatepickerValue} is not currently available.");
+
+        while (requiredDatepickerValue != datePickerValue)
+        {
+            await this._page.ClickAsync("a.ptrn-cal-Prev");
+            datePickerValue = await this._page.Locator("#smart_plus_date_picker").First.InputValueAsync();
+        }
+
+        var download = await this._page.RunAndWaitForDownloadAsync(async () =>
+        {
+            await this._page.ClickAsync("a.csv_download");
+        });
+        
+        return await download.CreateReadStreamAsync();
+    }
+
+    public void Dispose()
+    {
+        _playwright.Dispose();
+        _browser.DisposeAsync();
+        _browserContext.DisposeAsync();
     }
 }
