@@ -2,27 +2,16 @@ namespace EdfUsageDownloader;
 
 public class EdfCsvFileReader : IEdfDataProducer
 {
-    private string _dailyUsageFilePath;
-    private string _timeUsageFilePath;
+    private readonly string _dailyUsageFilePath;
+    private readonly string _timeUsageFilePath;
 
     public EdfCsvFileReader(string dailyUsageFilePath, string timeUsageFilePath)
     {
         this._dailyUsageFilePath = dailyUsageFilePath;
         this._timeUsageFilePath = timeUsageFilePath;
     }
-
-    public EdfCsvFileReader(string filePath, bool isDailyUsageFile)
-    {
-        if (isDailyUsageFile)
-        {
-            this._dailyUsageFilePath = filePath;
-            return;
-        }
-
-        this._timeUsageFilePath = filePath;
-    }
     
-    public List<EdfDailyUsageRecord> GetDailyUsage(DateTime? fromDate)
+    public async Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate)
     {
         if (string.IsNullOrEmpty(this._dailyUsageFilePath))
         {
@@ -30,10 +19,10 @@ public class EdfCsvFileReader : IEdfDataProducer
         }
         
         Stream fileStream = new FileStream(this._dailyUsageFilePath, FileMode.Open);
-        return fileStream.ToEdfDailyUsageRecords();
+        return await fileStream.ToEdfDailyUsageRecordsAsync();
     }
 
-    public List<EdfTimeUsageRecord> GetTimeUsage(DateTime? fromDate)
+    public async Task<List<EdfTimeUsageRecord>> GetTimeUsageAsync(DateTime? fromDate)
     {
         if (string.IsNullOrEmpty(this._timeUsageFilePath))
         {
@@ -41,6 +30,6 @@ public class EdfCsvFileReader : IEdfDataProducer
         }
         
         Stream fileStream = new FileStream(this._timeUsageFilePath, FileMode.Open);
-        return fileStream.ToEdfTimeUsageRecords();
+        return await fileStream.ToEdfTimeUsageRecordsAsync();
     }
 }

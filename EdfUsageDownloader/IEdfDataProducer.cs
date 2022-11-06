@@ -2,7 +2,7 @@ namespace EdfUsageDownloader;
 
 public interface IEdfDataProducer
 {
-    public List<EdfDailyUsageRecord> GetDailyUsage(DateTime? fromDate);
+    public Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate);
 
-    public List<EdfTimeUsageRecord> GetTimeUsage(DateTime? fromDate);
+    public Task<List<EdfTimeUsageRecord>> GetTimeUsageAsync(DateTime? fromDate);
 }

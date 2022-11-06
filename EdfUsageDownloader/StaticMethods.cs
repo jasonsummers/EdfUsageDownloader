@@ -5,16 +5,16 @@ namespace EdfUsageDownloader;
 
 public static class StaticMethods
 {
-    public static List<EdfDailyUsageRecord> ToEdfDailyUsageRecords(this Stream? usageStream)
+    public static async Task<List<EdfDailyUsageRecord>> ToEdfDailyUsageRecordsAsync(this Stream usageStream)
     {
         List<EdfDailyUsageRecord> usageRecords = new List<EdfDailyUsageRecord>();
         
         using (var reader = new StreamReader(usageStream))
         using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
         {
-            csv.Read();
+            await csv.ReadAsync();
             csv.ReadHeader();
-            while (csv.Read())
+            while (await csv.ReadAsync())
             {
                 var record = new EdfDailyUsageRecord
                 {
@@ -35,16 +35,16 @@ public static class StaticMethods
         return usageRecords;
     }
     
-    public static List<EdfTimeUsageRecord> ToEdfTimeUsageRecords(this Stream? usageStream)
+    public static async Task<List<EdfTimeUsageRecord>> ToEdfTimeUsageRecordsAsync(this Stream usageStream)
     {
         List<EdfTimeUsageRecord> usageRecords = new List<EdfTimeUsageRecord>();
         
         using (var reader = new StreamReader(usageStream))
         using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
         {
-            csv.Read();
+            await csv.ReadAsync();
             csv.ReadHeader();
-            while (csv.Read())
+            while (await csv.ReadAsync())
             {
                 var record = new EdfTimeUsageRecord
                 {

@@ -15,36 +15,26 @@ public class EdfCsvDownloader : IEdfDataProducer
         this._email = email;
         this._password = password;
     }
-    
-    public List<EdfDailyUsageRecord> GetDailyUsage(DateTime? fromDate)
-    {
-        return this.GetDailyUsageAsync(fromDate).Result;
-    }
 
-    public List<EdfTimeUsageRecord> GetTimeUsage(DateTime? fromDate)
+    public async Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate)
     {
-        return this.GetTimeUsageAsync(fromDate).Result;
-    }
-
-    private async Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate)
-    {
-        List<EdfDailyUsageRecord> usageRecords = new List<EdfDailyUsageRecord>();
+        var usageRecords = new List<EdfDailyUsageRecord>();
 
         fromDate = fromDate.HasValue
             ? new DateTime(fromDate.Value.Year, fromDate.Value.Month, 1)
             : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         
-        DateTime currentDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        var currentDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
 
         while (currentDate.Date >= (fromDate?.Date ?? DateTime.Now.Date))
         {
             Console.WriteLine($"Retrieving Daily Usage information for {currentDate.ToString("MMMM yyyy")}");
-            bool defaultMode = currentDate.Year == fromDate.Value.Year && currentDate.Month == fromDate.Value.Month;
+            var defaultMode = currentDate.Year == fromDate.Value.Year && currentDate.Month == fromDate.Value.Month;
 
             try
             {
-                Stream? csv = await this.GetCsvData(currentDate, true, defaultMode);
-                List<EdfDailyUsageRecord> edfUsageRecords = csv.ToEdfDailyUsageRecords();
+                var csv = await this.GetCsvData(currentDate, true, defaultMode);
+                var edfUsageRecords = await csv.ToEdfDailyUsageRecordsAsync();
 
                 usageRecords.AddRange(edfUsageRecords);
                 currentDate = currentDate.AddMonths(-1);
@@ -59,12 +49,12 @@ public class EdfCsvDownloader : IEdfDataProducer
         return usageRecords;
     }
 
-    private async Task<List<EdfTimeUsageRecord>> GetTimeUsageAsync(DateTime? fromDate)
+    public async Task<List<EdfTimeUsageRecord>> GetTimeUsageAsync(DateTime? fromDate)
     {
-        List<EdfTimeUsageRecord> usageRecords = new List<EdfTimeUsageRecord>();
+        var usageRecords = new List<EdfTimeUsageRecord>();
 
-        DateTime currentDate = DateTime.Now;
-        bool isFirstPass = true;
+        var currentDate = DateTime.Now;
+        var isFirstPass = true;
 
         while (currentDate.Date >= (fromDate?.Date ?? DateTime.Now.Date))
         {
@@ -72,8 +62,8 @@ public class EdfCsvDownloader : IEdfDataProducer
             
             try
             {
-                Stream? csv = await this.GetCsvData(currentDate, false, isFirstPass);
-                List<EdfTimeUsageRecord> edfUsageRecords = csv.ToEdfTimeUsageRecords();
+                var csv = await this.GetCsvData(currentDate, false, isFirstPass);
+                var edfUsageRecords = await csv.ToEdfTimeUsageRecordsAsync();
 
                 usageRecords.AddRange(edfUsageRecords);
 
@@ -155,10 +145,10 @@ public class EdfCsvDownloader : IEdfDataProducer
 
     private async Task<Stream?> GetCsvData(DateTime? forDate, bool isDailyUsage, bool defaultMode)
     {
-        string dataType = isDailyUsage ? "day" : "hour";
-        string fromDate = !forDate.HasValue ? string.Empty : forDate.Value.ToString("dd+MMMM+yyyy");
-        string eventType = defaultMode ? "default" : "dateEvent";
-        string data = $"tabVal={dataType}&fuelType=electricity&consumptionType=true&fromDate={fromDate}&eventType={eventType}";
+        var dataType = isDailyUsage ? "day" : "hour";
+        var fromDate = !forDate.HasValue ? string.Empty : forDate.Value.ToString("dd+MMMM+yyyy");
+        var eventType = defaultMode ? "default" : "dateEvent";
+        var data = $"tabVal={dataType}&fuelType=electricity&consumptionType=true&fromDate={fromDate}&eventType={eventType}";
 
         var baseAddress = new Uri("https://my.edfenergy.com");
 
@@ -182,7 +172,6 @@ public class EdfCsvDownloader : IEdfDataProducer
             message.Headers.Add("Cookie", this._cookieString);
             var result = await client.SendAsync(message);
             result.EnsureSuccessStatusCode();
-            string test = await result.Content.ReadAsStringAsync();
             resultStream = await result.Content.ReadAsStreamAsync();
         }
 
