@@ -62,7 +62,7 @@ public static class StaticMethods
 
     public static EdfDownloadMode ToEdfDownloadMode(this string settingString)
     {
-        switch (settingString)
+        switch (settingString.ToLower())
         {
             case "direct":
                 return EdfDownloadMode.Direct;

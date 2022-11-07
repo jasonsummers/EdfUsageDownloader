@@ -113,7 +113,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
             Headless = true,
-            SlowMo = 3000
+            SlowMo = 5000
         });
         _browserContext = await _browser.NewContextAsync(new BrowserNewContextOptions
         {
