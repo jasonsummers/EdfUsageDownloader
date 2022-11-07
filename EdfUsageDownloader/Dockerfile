@@ -18,28 +18,7 @@ COPY --from=publish /app/publish .
 COPY --from=build /app/build/playwright.ps1 .
 
 # Install Playwright dependencies
-RUN apt-get update && apt-get install -y wget \
-	  libglib2.0-0 \
-          libnss3 \
-          libnspr4 \
-          libatk1.0-0 \
-          libatk-bridge2.0-0 \
-          libcups2 \
-          libdrm2 \
-          libdbus-1-3 \
-          libxcb1 \
-          libxkbcommon0 \
-          libx11-6 \
-          libxcomposite1 \
-          libxdamage1 \
-          libxext6 \
-          libxfixes3 \
-          libxrandr2 \
-          libgbm1 \
-          libpango-1.0-0 \
-          libcairo2 \
-          libasound2 \
-          libatspi2.0-0
+RUN apt-get update && apt-get install -y wget
 
 # Download the Microsoft repository GPG keys
 #RUN apt-get update && apt-get install -y wget
@@ -56,4 +35,5 @@ RUN apt-get update && apt-get install -y powershell
 #RUN apt-get install -y powershell
 
 RUN pwsh playwright.ps1 install
+RUN pwsh playwright.ps1 install-deps
 ENTRYPOINT ["dotnet", "EdfUsageDownloader.dll"]
