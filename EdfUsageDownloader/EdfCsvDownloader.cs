@@ -11,6 +11,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
     
     private readonly string _email;
     private readonly string _password;
+    private readonly EdfDownloadMode _downloadMode;
     private string _cookieString;
     private List<Cookie> _cookies;
 
@@ -19,10 +20,11 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
     private IBrowserContext _browserContext;
     private IPage _page;
     
-    public EdfCsvDownloader(string email, string password)
+    public EdfCsvDownloader(string email, string password, EdfDownloadMode downloadMode)
     {
         this._email = email;
         this._password = password;
+        this._downloadMode = downloadMode;
         this._cookieString = string.Empty;
         this._cookies = new List<Cookie>();
     }
@@ -44,7 +46,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
 
             try
             {
-                var csv = await this.GetCsvData(currentDate, true, defaultMode, EdfDownloadMode.PlayWright);
+                var csv = await this.GetCsvData(currentDate, true, defaultMode);
                 var edfUsageRecords = await csv.ToEdfDailyUsageRecordsAsync();
 
                 usageRecords.AddRange(edfUsageRecords);
@@ -77,7 +79,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
             
             try
             {
-                var csv = await this.GetCsvData(currentDate, false, isFirstPass, EdfDownloadMode.PlayWright);
+                var csv = await this.GetCsvData(currentDate, false, isFirstPass);
                 var edfUsageRecords = await csv.ToEdfTimeUsageRecordsAsync();
 
                 usageRecords.AddRange(edfUsageRecords);
@@ -110,7 +112,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         _playwright = await Playwright.CreateAsync();
         _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
-            Headless = false,
+            Headless = true,
             SlowMo = 3000
         });
         _browserContext = await _browser.NewContextAsync(new BrowserNewContextOptions
@@ -181,10 +183,9 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         return await result.Content.ReadAsStringAsync();
     }
 
-    private async Task<Stream?> GetCsvData(DateTime? forDate, bool isDailyUsage, bool defaultMode,
-        EdfDownloadMode downloadMode)
+    private async Task<Stream?> GetCsvData(DateTime? forDate, bool isDailyUsage, bool defaultMode)
     {
-        if (downloadMode == EdfDownloadMode.Direct)
+        if (_downloadMode == EdfDownloadMode.Direct)
         {
             await this.SetGraphData(forDate, isDailyUsage, defaultMode);
             using var handler = new HttpClientHandler { UseCookies = false };

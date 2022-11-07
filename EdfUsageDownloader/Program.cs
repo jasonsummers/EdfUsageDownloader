@@ -18,6 +18,7 @@ namespace EdfUsageDownloader
             var password = config.GetValue<string>("edf_account_password");
             var dailyUsageCsvFile = config.GetValue<string>("dailyUsageCsvFile");
             var timeUsageCsvFile = config.GetValue<string>("timeUsageCsvFile");
+            var downloadMode = config.GetValue<string>("edf_download_mode").ToEdfDownloadMode();
 
             IEdfDataProducer edfDataProducer;
 
@@ -25,7 +26,7 @@ namespace EdfUsageDownloader
             {
                 Console.WriteLine("Either dailyUsageCsvFile or timeUsageCsvFile not set, using CSV Downloader.");
                 
-                var csvDownloader = new EdfCsvDownloader(email, password);
+                var csvDownloader = new EdfCsvDownloader(email, password, downloadMode);
                 await csvDownloader.Authenticate();
                 edfDataProducer = csvDownloader;
             }

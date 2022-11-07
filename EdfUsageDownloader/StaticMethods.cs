@@ -59,4 +59,17 @@ public static class StaticMethods
 
         return usageRecords;
     }
+
+    public static EdfDownloadMode ToEdfDownloadMode(this string settingString)
+    {
+        switch (settingString)
+        {
+            case "direct":
+                return EdfDownloadMode.Direct;
+            case "playwright":
+                return EdfDownloadMode.PlayWright;
+            default:
+                return EdfDownloadMode.PlayWright;
+        }
+    }
 }
