@@ -212,17 +212,23 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         var requiredDatepickerValue = isDailyUsage 
             ? forDate.HasValue ? forDate.Value.ToString(monthlyDateFormat) : DateTime.Now.ToString(monthlyDateFormat)
             : forDate.HasValue ? forDate.Value.ToString(dailyDateFormat) : DateTime.Now.ToString(dailyDateFormat);
+
+        var requiredDatepickerValueDateTime = DateTime.Parse(requiredDatepickerValue);
         
         var datePicker = this._page.Locator("#smart_plus_date_picker").First;
         var datePickerValue = await datePicker.InputValueAsync();
-
-        // if we're getting hourly usage, and the required date month is the same as the datepicker month
-        // and the required date day is not equal to the datepicker day
-        // and the required date day is greater than the datepicker day
+        var datePickerValueDateTime = DateTime.Parse(datePickerValue);
+        
+        // if we're getting daily usage, and the required date month is one month ahead of the datepicker month
         // then we're asking for data which doesn't exist yet
-        if (!isDailyUsage && datePickerValue.Substring(3, 3) == requiredDatepickerValue.Substring(3, 3) &&
-            datePickerValue.Substring(0, 2) != requiredDatepickerValue.Substring(0, 2) &&
-            Convert.ToInt32(datePickerValue.Substring(0, 2)) < Convert.ToInt32(requiredDatepickerValue.Substring(0, 2)))
+        if (isDailyUsage && datePickerValueDateTime.Month == (requiredDatepickerValueDateTime.Month - 1))
+            throw new DataException($"Information for {requiredDatepickerValue} is not currently available.");
+
+        // if we're getting hourly usage, and the datepicker DayOfYear is less than the required date DayOfYear
+        // and the required date datepicker are both in the same year
+        // then we're asking for data which doesn't exist yet
+        if (!isDailyUsage && datePickerValueDateTime.DayOfYear < requiredDatepickerValueDateTime.DayOfYear &&
+            datePickerValueDateTime.Year == requiredDatepickerValueDateTime.Year)
             throw new DataException($"Information for {requiredDatepickerValue} is not currently available.");
 
         while (requiredDatepickerValue != datePickerValue)
