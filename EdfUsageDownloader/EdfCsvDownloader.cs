@@ -126,16 +126,15 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         await this._page.GotoAsync("https://my.edfenergy.com/user/login",
             new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
-        await this._page.WaitForSelectorAsync("[placeholder=\"e.g. an.other@email.com\"]");
+        await this._page.WaitForSelectorAsync("input[name=\"email\"]");
         
-        await this._page.ClickAsync("[aria-label=\"Let us know if we can use cookies\"] [aria-label=\"Close\"]");
+        //await this._page.ClickAsync("[aria-label=\"Let us know if we can use cookies\"] [aria-label=\"Close\"]");
 
-        // Fill [placeholder="e.g. an.other@email.com"]
-        await this._page.FillAsync("[placeholder=\"e.g. an.other@email.com\"]", this._email);
+        // Fill "input[name=\"email\"]"
+        await this._page.FillAsync("input[name=\"email\"]", this._email);
 
         // Click text=Next
-        await this._page.ClickAsync("input:has-text('Log In')");
-        // Assert.AreEqual("https://my.edfenergy.com/login/pwdorotp", this._page.Url);
+        await this._page.ClickAsync("button[aria-label=\"Log in\"]");
 
         // Fill [placeholder="Password"]
         await this._page.FillAsync("[placeholder=\"Password\"]", this._password);
