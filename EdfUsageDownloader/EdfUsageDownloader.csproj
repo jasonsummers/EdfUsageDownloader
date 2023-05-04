@@ -7,13 +7,13 @@
         <Nullable>enable</Nullable>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <IsPackable>false</IsPackable>
-        <PackageVersion>1.0.6</PackageVersion>
+        <PackageVersion>1.0.7</PackageVersion>
         <Title>EdfUsageDownloader</Title>
         <Authors>Jason Summers</Authors>
         <Description>A console app to download usage data from the Edf website and save it into a MySql database</Description>
         <Copyright>Jason Summers</Copyright>
-        <AssemblyVersion>1.0.6</AssemblyVersion>
-        <FileVersion>1.0.6</FileVersion>
+        <AssemblyVersion>1.0.7</AssemblyVersion>
+        <FileVersion>1.0.7</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,7 +25,7 @@
         <PrivateAssets>all</PrivateAssets>
       </PackageReference>
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
-      <PackageReference Include="Microsoft.Playwright" Version="1.27.2" />
+      <PackageReference Include="Microsoft.Playwright" Version="1.33.0" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
     </ItemGroup>
 
