@@ -7,13 +7,13 @@
         <Nullable>enable</Nullable>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <IsPackable>false</IsPackable>
-        <PackageVersion>1.0.5</PackageVersion>
+        <PackageVersion>1.0.6</PackageVersion>
         <Title>EdfUsageDownloader</Title>
         <Authors>Jason Summers</Authors>
         <Description>A console app to download usage data from the Edf website and save it into a MySql database</Description>
         <Copyright>Jason Summers</Copyright>
-        <AssemblyVersion>1.0.5</AssemblyVersion>
-        <FileVersion>1.0.5</FileVersion>
+        <AssemblyVersion>1.0.6</AssemblyVersion>
+        <FileVersion>1.0.6</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>

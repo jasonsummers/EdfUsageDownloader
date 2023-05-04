@@ -140,7 +140,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         await this._page.FillAsync("[placeholder=\"Password\"]", this._password);
 
         // Click text=Log in with password
-        await this._page.ClickAsync("text=Log in with password");
+        await this._page.ClickAsync("button#customer_login");
 
         await this._page.GotoAsync("https://my.edfenergy.com/myaccount/energyhub/home",
             new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
