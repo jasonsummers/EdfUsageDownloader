@@ -7,29 +7,29 @@ public class EdfCsvFileReader : IEdfDataProducer
 
     public EdfCsvFileReader(string dailyUsageFilePath, string timeUsageFilePath)
     {
-        this._dailyUsageFilePath = dailyUsageFilePath;
-        this._timeUsageFilePath = timeUsageFilePath;
+        _dailyUsageFilePath = dailyUsageFilePath;
+        _timeUsageFilePath = timeUsageFilePath;
     }
     
     public async Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate)
     {
-        if (string.IsNullOrEmpty(this._dailyUsageFilePath))
+        if (string.IsNullOrEmpty(_dailyUsageFilePath))
         {
             throw new NullReferenceException("Daily Usage CSV File Not Specified.");
         }
         
-        Stream fileStream = new FileStream(this._dailyUsageFilePath, FileMode.Open);
+        Stream fileStream = new FileStream(_dailyUsageFilePath, FileMode.Open);
         return await fileStream.ToEdfDailyUsageRecordsAsync();
     }
 
     public async Task<List<EdfTimeUsageRecord>> GetTimeUsageAsync(DateTime? fromDate)
     {
-        if (string.IsNullOrEmpty(this._timeUsageFilePath))
+        if (string.IsNullOrEmpty(_timeUsageFilePath))
         {
             throw new NullReferenceException("Time Usage CSV File Not Specified.");
         }
         
-        Stream fileStream = new FileStream(this._timeUsageFilePath, FileMode.Open);
+        Stream fileStream = new FileStream(_timeUsageFilePath, FileMode.Open);
         return await fileStream.ToEdfTimeUsageRecordsAsync();
     }
 }

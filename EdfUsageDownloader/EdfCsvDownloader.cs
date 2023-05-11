@@ -22,11 +22,11 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
     
     public EdfCsvDownloader(string email, string password, EdfDownloadMode downloadMode)
     {
-        this._email = email;
-        this._password = password;
-        this._downloadMode = downloadMode;
-        this._cookieString = string.Empty;
-        this._cookies = new List<Cookie>();
+        _email = email;
+        _password = password;
+        _downloadMode = downloadMode;
+        _cookieString = string.Empty;
+        _cookies = new List<Cookie>();
     }
 
     public async Task<List<EdfDailyUsageRecord>> GetDailyUsageAsync(DateTime? fromDate)
@@ -121,34 +121,31 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         });
 
         // Open new page
-        this._page = await _browserContext.NewPageAsync();
+        _page = await _browserContext.NewPageAsync();
         // Go to https://my.edfenergy.com/
-        await this._page.GotoAsync("https://my.edfenergy.com/user/login",
+        await _page.GotoAsync("https://edfenergy.com/myaccount/login?destination=myaccount/energyhub/home",
             new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
-        await this._page.WaitForSelectorAsync("input[name=\"email\"]");
-        
-        //await this._page.ClickAsync("[aria-label=\"Let us know if we can use cookies\"] [aria-label=\"Close\"]");
+        await _page.WaitForSelectorAsync("input[name=\"email\"]");
 
         // Fill "input[name=\"email\"]"
-        await this._page.FillAsync("input[name=\"email\"]", this._email);
+        await _page.FillAsync("input[name=\"email\"]", _email);
 
         // Click text=Next
-        await this._page.ClickAsync("button[aria-label=\"Log in\"]");
+        await _page.ClickAsync("button[aria-label=\"Log in\"]");
 
         // Fill [placeholder="Password"]
-        await this._page.FillAsync("[placeholder=\"Password\"]", this._password);
+        await _page.FillAsync("[placeholder=\"Password\"]", _password);
 
         // Click text=Log in with password
-        await this._page.ClickAsync("button#customer_login");
+        await _page.ClickAsync("button#customer_login");
 
-        await this._page.GotoAsync("https://my.edfenergy.com/myaccount/energyhub/home",
-            new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        await _page.WaitForSelectorAsync("#smartplus-day");
         
-        foreach (var cookie in await this._page.Context.CookiesAsync())
+        foreach (var cookie in await _page.Context.CookiesAsync())
         {
-            this._cookieString += $"{cookie.Name}={cookie.Value};";
-            this._cookies.Add(new Cookie
+            _cookieString += $"{cookie.Name}={cookie.Value};";
+            _cookies.Add(new Cookie
             {
                 Domain = cookie.Domain,
                 Name = cookie.Name,
@@ -173,7 +170,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         using var client = new HttpClient(handler) { BaseAddress = _baseAddress };
         
         var message = new HttpRequestMessage(HttpMethod.Post, "/smartplus/graph/generate");
-        message.Headers.Add("Cookie", this._cookieString);
+        message.Headers.Add("Cookie", _cookieString);
         message.Content = new StringContent(data, Encoding.UTF8);
         message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
         var result = await client.SendAsync(message);
@@ -190,7 +187,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
             using var handler = new HttpClientHandler { UseCookies = false };
             using var client = new HttpClient(handler) { BaseAddress = _baseAddress };
             var message = new HttpRequestMessage(HttpMethod.Get, "/smartplus-csv");
-            message.Headers.Add("Cookie", this._cookieString);
+            message.Headers.Add("Cookie", _cookieString);
             var result = await client.SendAsync(message);
             result.EnsureSuccessStatusCode();
             return await result.Content.ReadAsStreamAsync();
@@ -199,10 +196,10 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         switch (isDailyUsage)
         {
             case true:
-                await this._page.ClickAsync("#smartplus-day");
+                await _page.ClickAsync("#smartplus-day");
                 break;
             case false:
-                await this._page.ClickAsync("#smartplus-hour");
+                await _page.ClickAsync("#smartplus-hour");
                 break;
         }
 
@@ -215,7 +212,7 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
 
         var requiredDatepickerValueDateTime = DateTime.Parse(requiredDatepickerValue);
         
-        var datePicker = this._page.Locator("#smart_plus_date_picker").First;
+        var datePicker = _page.Locator("#smart_plus_date_picker").First;
         var datePickerValue = await datePicker.InputValueAsync();
         var datePickerValueDateTime = DateTime.Parse(datePickerValue);
         
@@ -233,13 +230,13 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
 
         while (requiredDatepickerValue != datePickerValue)
         {
-            await this._page.ClickAsync("a.ptrn-cal-Prev");
-            datePickerValue = await this._page.Locator("#smart_plus_date_picker").First.InputValueAsync();
+            await _page.ClickAsync("a.ptrn-cal-Prev");
+            datePickerValue = await _page.Locator("#smart_plus_date_picker").First.InputValueAsync();
         }
 
-        var download = await this._page.RunAndWaitForDownloadAsync(async () =>
+        var download = await _page.RunAndWaitForDownloadAsync(async () =>
         {
-            await this._page.ClickAsync("a.csv_download");
+            await _page.ClickAsync("a.csv_download");
         });
         
         return await download.CreateReadStreamAsync();
