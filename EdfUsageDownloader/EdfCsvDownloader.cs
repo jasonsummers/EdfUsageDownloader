@@ -137,6 +137,9 @@ public class EdfCsvDownloader : IEdfDataProducer, IDisposable
         // Fill [placeholder="Password"]
         await _page.FillAsync("[placeholder=\"Password\"]", _password);
 
+        var cookiesButton = _page.Locator("[aria-label=\"Let us know if we can use cookies\"] [aria-label=\"Close\"]");
+        if (cookiesButton is not null) await cookiesButton.ClickAsync();
+
         // Click text=Log in with password
         await _page.ClickAsync("button#customer_login");
 
