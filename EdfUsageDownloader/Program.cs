@@ -43,7 +43,7 @@ namespace EdfUsageDownloader
             });
             
             var mapper = configuration.CreateMapper();
-            var dbContext = new UsageDbContext();
+            var dbContext = new UsageDbContext(config);
 
             await ProcessDailyUsage(dbContext, edfDataProducer, mapper);
             await ProcessTimeUsage(dbContext, edfDataProducer, mapper);
